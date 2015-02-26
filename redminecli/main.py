@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 from __future__ import print_function
 
@@ -16,7 +17,9 @@ except:
     from configparser import ConfigParser
 
 
+
 from . import __version__
+from . import gen_tree
 
 
 config_file_path = "~/.redmine-cli"
@@ -90,21 +93,25 @@ def print_issues(data):
 def cmd_issues(args):
     global user_id
     user_id = get_config_instance("default").get("my_id", user_id)
-    data = get_json("/issues.json",{"assigned_to_id":user_id, })
+    data = get_json("/issues.json",{"assigned_to_id":"me", })
 
     print_issues(data)
 
 def cmd_issue(args):
-    data = get_json("/issues/{issue}.json".format(issue=args.issue_id))
+    data = get_json("/issues/{issue}.json?include=children".format(issue=args.issue_id))
     is_verbose = args.verbose
 
     if is_verbose:
-        print("Title: %s" % data["issue"]["subject"])
-        print("Status: %s" % data["issue"]["status"]["name"])
-        print("Author: %s" % data["issue"]["author"]["name"])
+        issue = data["issue"]
+        print("Title: %s" % issue["subject"])
+        print("Status: %s" % issue["status"]["name"])
+        print("Author: %s" % issue["author"]["name"])
         print("description:")
         #TODO: description can be html/markdown etc.
-        print(data["issue"]["description"])
+        print(issue["description"])
+        if 'children' in issue:
+            print(gen_tree.show_subtask_tree(issue['children']))
+
     else:
         print(data["issue"]["subject"])
 
